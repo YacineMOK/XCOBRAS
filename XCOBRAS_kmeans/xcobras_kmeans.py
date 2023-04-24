@@ -15,7 +15,7 @@ class XCOBRAS_kmeans(COBRAS_kmeans):
         """
         self.budget = budget
         self.fitted = False
-        self.clustering = None
+        self.clustering = None #TODO Enlever
         
 
     def fit(self, X, y=CommandLineQuerier(), store_intermediate_results=True):
@@ -79,6 +79,7 @@ class XCOBRAS_kmeans(COBRAS_kmeans):
     def predict(self, X):
         """
         Function that mimics the "predict" function of any other sklearn model.
+        Returns the "label" (here, cluster) of each data.
 
         Args:
             X (np.array): dataset of size (nb_samples, nb_features)
@@ -93,8 +94,10 @@ class XCOBRAS_kmeans(COBRAS_kmeans):
         # does nothing. does one TODO mieux le dire
         k = KMeans(n_clusters=all_centroids.shape[0], max_iter=1,n_init=1)
         k.cluster_centers_ = all_centroids
+        
         # cannot call the predict function of kmeans otherwise
         k.fit(all_centroids)
+        
         # to make sure the indices were not swapped
         k.cluster_centers_ = all_centroids
 
@@ -106,6 +109,8 @@ class XCOBRAS_kmeans(COBRAS_kmeans):
 
         # Returns the "COBRAS" 
         return COBRAS_labels
+    
+    
     
     def score(self, X, y):
         # TODO :)
