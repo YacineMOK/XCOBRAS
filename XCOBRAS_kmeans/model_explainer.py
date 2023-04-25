@@ -92,9 +92,9 @@ class PartTwo():
             y_test_pred = self.predict(self.X_test)
             print("---------Some scores:---------")
             print("------------------------------")
-            print(f"f1-score (macro): {f1_score(self.y_hat_test, y_test_pred, average='macro')}")
-            print(f"         (micro): {f1_score(self.y_hat_test, y_test_pred, average='micro')}")
-            print(f"accuracy_score:   {accuracy_score(self.y_hat_test, y_test_pred)}")
+            print(f"f1-score (macro): {f1_score(self.y_hat_test, y_test_pred, average='macro'):.10f}")
+            print(f"         (micro): {f1_score(self.y_hat_test, y_test_pred, average='micro'):.10f}")
+            print(f"  accuracy_score: {accuracy_score(self.y_hat_test, y_test_pred):.10f}")
             print("------------------------------")
                 
     def predict(self, X):

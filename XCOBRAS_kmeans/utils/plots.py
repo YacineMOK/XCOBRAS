@@ -37,7 +37,7 @@ def plot_2D(data, labels, ax, pca_t = True, n_components=2, c1=0, c2=1, title=No
     ax.legend()
     return ax
 
-def plot_boundary(clf, X, ax, y=None, h=0.002):
+def plot_boundary(clf, X, ax, y=None, h=0.002, title=""):
     h = h ## grid mesh size
     x_min, x_max = X[:, 0].min() - .1, X[:, 0].max() + .1 
     y_min, y_max = X[:, 1].min() - .1, X[:, 1].max() + .1
@@ -51,9 +51,8 @@ def plot_boundary(clf, X, ax, y=None, h=0.002):
     ax.contourf(xx, yy, Z, cmap=plt.cm.Paired, alpha=0.8)
 
 
-    # TODO ajouter les si 
-    # plt.scatter(X, X, c=y, s = 100)
-    # plt.title('score : ' + str(clf.score(X,y)))
+    ax.scatter(X, X, c=y, s = 100)
+    ax.set_title('score : ' + title)
     ax.set_xlabel('$x_1$')
     ax.set_ylabel('$x_2$')
     ax.legend()

@@ -15,7 +15,6 @@ class XCOBRAS_kmeans(COBRAS_kmeans):
         """
         self.budget = budget
         self.fitted = False
-        self.clustering = None #TODO Enlever
         
 
     def fit(self, X, y=CommandLineQuerier(), store_intermediate_results=True):
@@ -88,26 +87,25 @@ class XCOBRAS_kmeans(COBRAS_kmeans):
             np.array: array of the associated labels of size (nb_samples,)
         """
         
-        # TODO changer ça si on prend encompte le 
+        # TODO changer ça si on prend encompte la "sauvegarde" ou "construction ittérative"
         _, all_centroids, map_si_to_cluster  = self.get_all_SICM()
         
-        # does nothing. does one TODO mieux le dire
+        # ---- GET THE CLOSEST SUPER INSTANCE
+        # Use sklearn.KMeans to get the closest super instance (faster)
         k = KMeans(n_clusters=all_centroids.shape[0], max_iter=1,n_init=1)
         k.cluster_centers_ = all_centroids
-        
-        # cannot call the predict function of kmeans otherwise
+        # cannot call the predict function of kmeans without at least one fitting iteration
         k.fit(all_centroids)
-        
         # to make sure the indices were not swapped
         k.cluster_centers_ = all_centroids
 
-        # predict the labels 
-        #    -  kmeans has "nb_si" centroids
-        #    -  in reality, several si mapps to the same cluster
+        # ---- PREDICT THE LABELS
+        #    -  kmeans has "nb_super_instances" centroids
+        #    -  in reality, several super instances maps to the same cluster
         KMeans_labels = k.predict(X)
         COBRAS_labels = np.array([map_si_to_cluster[i] for i in  KMeans_labels])
 
-        # Returns the "COBRAS" 
+        # Returns the clustering labels 
         return COBRAS_labels
     
     
