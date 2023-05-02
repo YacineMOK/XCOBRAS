@@ -3,18 +3,19 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.svm import SVC
+import shap
 
 # import 2e modèle
 # .....
     
 
-class PartTwo():
+class XCobrasExplainer():
     """
     décrire son intêret... 
 
     Attributes:
         - self.model (str): which classifier are we going to use
-            by default"SVM" 
+            by default"rbf_svm" 
         - self.clf (sklearn Pipeline): the actual pipeline of this classifier.
             Using "Pipeline()" makes it clearer and easier to fit, predict and manipulate.
         - self.grid_search_cv (dict): The parameters that are going to be fine-tuned
@@ -23,11 +24,11 @@ class PartTwo():
 
     ...    
     """
-    def __init__(self, model="SVM", test_size=0.4, verbose=True) -> None:
+    def __init__(self, model="rbf_svm", test_size=0.4, verbose=True) -> None:
         """Init function
 
         Args:
-            model (str, optional): Which classifier are we going to use. Defaults to "SVM".
+            model (str, optional): Which classifier are we going to use. Defaults to "rbf_svm".
             test_size (float, optional): Proportion of the test dataset. Defaults to (0.4).
         """
         self.model = model
@@ -36,10 +37,12 @@ class PartTwo():
         self.clf = None
         self.grid_search_cv = None
         self.verbose = verbose
+        self.explainer = None
+        self.shap_values = None
 
 
         # ----- Model selection
-        if self.model == "SVM":
+        if self.model == "rbf_svm":
             # RBF Model
             self.clf = Pipeline([
                 ("scaler", StandardScaler()),
@@ -94,8 +97,9 @@ class PartTwo():
             print("------------------------------")
             print(f"f1-score (macro): {f1_score(self.y_hat_test, y_test_pred, average='macro'):.10f}")
             print(f"         (micro): {f1_score(self.y_hat_test, y_test_pred, average='micro'):.10f}")
-            print(f"  accuracy_score: {accuracy_score(self.y_hat_test, y_test_pred):.10f}")
+            # print(f"  accuracy_score: {accuracy_score(self.y_hat_test, y_test_pred):.10f}")
             print("------------------------------")
+            print("")
                 
     def predict(self, X):
         """Prediction function
@@ -108,5 +112,22 @@ class PartTwo():
         """
         return self.best_model.predict(X)
 
-    def explain(self, X):
-        ...
+    def explain(self, X, feature_names=None):
+        # TODO warning / try / catch: self.best_model
+        
+        # if feature_names == None:
+        #     feature_names = ["A: "+str(i)for i in range(X.shape[1])]
+
+        self.explainer = shap.Explainer(
+            self.best_model.predict,
+            self.X_train,
+            feature_names=feature_names
+        )
+
+        self.shap_values = self.explainer(X)
+        return self.shap_values
+    
+
+    def fit_explain(self, X, y, ids, feature_names=None):
+        self.fit(X,y)
+        return self.explain(X[ids])

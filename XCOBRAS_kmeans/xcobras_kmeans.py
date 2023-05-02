@@ -1,13 +1,21 @@
 # general import
+import time
+import itertools
 import numpy as np
 from sklearn.cluster import KMeans
+
 # import from cobras_ts
+from cobras_ts.cluster import Cluster
+from cobras_ts.clustering import Clustering
 from cobras_ts.cobras_kmeans import COBRAS_kmeans
 from cobras_ts.querier.commandlinequerier import CommandLineQuerier
 
+# XCobrasExplainer
+from model_explainer import XCobrasExplainer
+
 
 class XCOBRAS_kmeans(COBRAS_kmeans):
-    def __init__(self, budget=10, X=None, querier=None):
+    def __init__(self, budget=10, X=None, querier=None, model="rbf_svm", test_size=0.4, one_versus_all = True, verbose=True):
         """ Constructor of the "XCOBRAS_kmeans", extends  class "COBRAS_kmeans"
 
         Args:
@@ -15,9 +23,11 @@ class XCOBRAS_kmeans(COBRAS_kmeans):
         """
         self.budget = budget
         self.fitted = False
+        self.model_explainer = XCobrasExplainer(model=model, test_size=test_size, verbose=verbose)
+        self.one_versus_all = one_versus_all
         
 
-    def fit(self, X, y=CommandLineQuerier(), store_intermediate_results=True):
+    def fit(self, X, feature_names=None, y=CommandLineQuerier(), store_intermediate_results=True):
         """Function that mimics the sklearn "fit" function.
         TODO... compléter après l'avoir terminée
 
@@ -39,11 +49,130 @@ class XCOBRAS_kmeans(COBRAS_kmeans):
             max_questions  = self.budget,
             store_intermediate_results = store_intermediate_results
         )
-
+        self.feature_names = feature_names
         # performs clustering
         self.fitted = True
-        return super().cluster()
+        return self.cluster()
 
+    # Override this method to include explanations
+    def determine_split_level(self, superinstance, clustering_to_store):
+        """ Determine the splitting level for the given super-instance using a small amount of queries
+
+        For each query that is posed during the execution of this method the given clustering_to_store is stored as an intermediate result.
+        The provided clustering_to_store should be the last valid clustering that is available
+
+        :return: the splitting level k
+        :rtype: int
+        """
+        
+
+        # need to make a 'deep copy' here, we will split this one a few times just to determine an appropriate splitting
+        # level
+        si = self.create_superinstance(superinstance.indices)
+
+        must_link_found = False
+        # the maximum splitting level is the number of instances in the superinstance
+        max_split = len(si.indices)
+        split_level = 0
+        while not must_link_found and len(self.ml) + len(self.cl) < self.max_questions:
+            if len(si.indices) == 2:
+                # if the superinstance that is being splitted just contains 2 elements split it in 2 superinstances with just 1 instance
+                new_si = [self.create_superinstance([si.indices[0]]), self.create_superinstance([si.indices[1]])]
+            else:
+                # otherwise use k-means to split it
+                new_si = self.split_superinstance(si, 2)
+
+            if len(new_si) == 1:
+                # we cannot split any further along this branch, we reached the splitting level
+                split_level = max([split_level, 1])
+                split_n = 2 ** int(split_level)
+                return min(max_split, split_n)
+
+            s1 = new_si[0]
+            s2 = new_si[1]
+            
+            pt1 = min([s1.representative_idx, s2.representative_idx])
+            pt2 = max([s1.representative_idx, s2.representative_idx])
+
+            ############################################################################################################
+            ##### YACINE #####
+            # Avant de demander à l'utilisateur ce qu'il veut répondre:
+            # 1. EXPLAIN-IT -> générer des features importances des classes + des deux instances
+            # 2. Les montrer (où et comment ?)
+            # 3. Y répondre
+            # 
+            # ****Mettre ça ici pour le moment, voir si on utiliserait pas un autre  "querier" plutot****
+            ##################
+
+            # Construct the labeling ?
+            # cas où on prend 1 vs all
+            y_hat = np.array(clustering_to_store) 
+            explanations = [None, None]
+
+            if self.one_versus_all:
+                # convert points of the same cluster to 1, others to 0
+                current_label = clustering_to_store[pt1]
+                mask = y_hat == current_label
+
+                y_hat[~mask] = 0 # label 0 others 
+                y_hat[mask]  = 1 # label 1
+            
+            if len(y_hat[y_hat == 1]) != len(clustering_to_store):
+                # meaning number of class > 1
+                
+                shap_values = self.model_explainer.fit_explain(self.data, y_hat, [pt1, pt2], feature_names=self.feature_names)
+
+                # print("Model Explainer running...")
+                # #  fit "SVM" avec toutes les données + labels 1 pour la si1 - label2 pour la si2 et label0 pour le reste (si y en a)
+                # self.model_explainer.fit(self.data, y_hat)
+                # print("... finished!\n------------------------------------------\n\n")
+                
+                # print("Computing the 'Shap Values'...")
+                # # explain que les deux groupes 
+                # shap_values = self.model_explainer.explain(
+                #     np.array(self.data)[[pt1, pt2]], 
+                #     feature_names = self.feature_names
+                #     )
+
+                explanations[0] = shap_values[0]
+                explanations[1] = shap_values[1]
+                # print("... finished!\n------------------------------------------\n\n")
+                # print(f"(before) exp1: {explanations[0].values} | exp2: {explanations[1].values} ")
+            ############################################################################################################
+
+            
+            
+            if self.querier.query_points(pt1, pt2, explanations[0], explanations[1]):
+                self.ml.append((pt1, pt2))
+                must_link_found = True
+                if self.store_intermediate_results:
+                    self.intermediate_results.append(
+                        (clustering_to_store, time.time() - self.start_time, len(self.ml) + len(self.cl)))
+                continue
+            else:
+                self.cl.append((pt1, pt2))
+                split_level += 1
+                if self.store_intermediate_results:
+                    self.intermediate_results.append(
+                        (clustering_to_store, time.time() - self.start_time, len(self.ml) + len(self.cl)))
+
+            si_to_choose = []
+            if len(s1.train_indices) >= 2:
+                si_to_choose.append(s1)
+            if len(s2.train_indices) >= 2:
+                si_to_choose.append(s2)
+
+            if len(si_to_choose) == 0:
+                split_level = max([split_level, 1])
+                split_n = 2 ** int(split_level)
+                return min(max_split, split_n)
+
+            si = min(si_to_choose, key=lambda x: len(x.indices))
+
+        split_level = max([split_level, 1])
+        split_n = 2 ** int(split_level)
+        return min(max_split, split_n)        
+        
 
     def get_all_SICM(self):
         """getter that gets all the :
@@ -108,8 +237,20 @@ class XCOBRAS_kmeans(COBRAS_kmeans):
         # Returns the clustering labels 
         return COBRAS_labels
     
-    
-    
+    def get_cluster_and_all_super_instances(self, super_instance):
+        """Function that looks for the super instances leading to the same cluster.
+        Objective: Look for all the partitions that are refering to the same cluster. 
+
+        Args:
+            super_instance (cobras_ts.superinstance_kmeans.SuperInstance_kmeans): a super instance
+
+        Returns:
+            dict: The key is of type:   cobras_ts.cluster.Cluster
+                The value is of type: list(cobras_ts.superinstance_kmeans.SuperInstance_kmeans) representing the same cluster
+        """
+        my_dict = self.clustering.get_cluster_to_generalized_super_instance_map()
+        return [{k:list(itertools.chain.from_iterable(v))} for k, v in my_dict.items() if [super_instance] in v][0]
+
     def score(self, X, y):
         # TODO :)
         pass
