@@ -24,7 +24,7 @@ class XCobrasExplainer():
 
     ...    
     """
-    def __init__(self, model="rbf_svm", test_size=0.4, verbose=True) -> None:
+    def __init__(self, model="rbf_svm", xai_model="shap", test_size=0.4, verbose=True) -> None:
         """Init function
 
         Args:
@@ -37,8 +37,9 @@ class XCobrasExplainer():
         self.clf = None
         self.grid_search_cv = None
         self.verbose = verbose
+        self.xai_method = xai_model
         self.explainer = None
-        self.shap_values = None
+        self.explanations = None
 
 
         # ----- Model selection
@@ -86,7 +87,7 @@ class XCobrasExplainer():
         # Fitting this model
         # GridSearchCV
         # TODO GERER LES NUMPY ARRAY ET LES DATAFRAME 
-        # TODO POUR LE MOMENT QUEDES NUMPY ARRAY
+        # TODO POUR LE MOMENT QUE DES NUMPY ARRAY
         self.grid_search_cv.fit(self.X_train,self.y_hat_train)
         self.best_model = self.grid_search_cv.best_estimator_
 
@@ -117,15 +118,19 @@ class XCobrasExplainer():
         
         # if feature_names == None:
         #     feature_names = ["A: "+str(i)for i in range(X.shape[1])]
+        
+        if self.xai_model == "shap":
+            self.explainer = shap.Explainer(
+                self.best_model.predict,
+                self.X_train,
+                feature_names=feature_names
+            )
 
-        self.explainer = shap.Explainer(
-            self.best_model.predict,
-            self.X_train,
-            feature_names=feature_names
-        )
+            self.explanations = self.explainer(X)
+        else:
+            ...
 
-        self.shap_values = self.explainer(X)
-        return self.shap_values
+        return self.explanations
     
 
     def fit_explain(self, X, y, ids, feature_names=None):
