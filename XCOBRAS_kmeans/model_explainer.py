@@ -4,12 +4,13 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.svm import SVC
 import shap
+from lime import lime_tabular
 
 # import 2e modèle
 # .....
     
 
-class XCobrasExplainer():
+class ClusteringExplainer():
     """
     décrire son intêret... 
 
@@ -24,7 +25,13 @@ class XCobrasExplainer():
 
     ...    
     """
-    def __init__(self, model="rbf_svm", xai_model="shap", test_size=0.4, verbose=True) -> None:
+    def __init__(self, 
+                 model="rbf_svm", 
+                 xai_model="shap", 
+                 test_size=0.4,               # when training the "model" model 
+                 one_versus_all = True,       
+                 discretize_continuous=False, # for lime only
+                 verbose=True) -> None:
         """Init function
 
         Args:
@@ -37,7 +44,9 @@ class XCobrasExplainer():
         self.clf = None
         self.grid_search_cv = None
         self.verbose = verbose
-        self.xai_method = xai_model
+        self.xai_model = xai_model
+        self.one_vs_all = one_versus_all
+        self.discretize_continuous = discretize_continuous
         self.explainer = None
         self.explanations = None
 
@@ -47,7 +56,7 @@ class XCobrasExplainer():
             # RBF Model
             self.clf = Pipeline([
                 ("scaler", StandardScaler()),
-                ("svm_clf", SVC(kernel="rbf", gamma=5, C=0.001))
+                ("svm_clf", SVC(kernel="rbf", gamma=5, C=0.001, probability=True))
             ])
             # Parameters  of the grid search
             gammas = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7]
@@ -113,7 +122,7 @@ class XCobrasExplainer():
         """
         return self.best_model.predict(X)
 
-    def explain(self, X, feature_names=None):
+    def explain(self, X, feature_names=None, class_names=None):
         # TODO warning / try / catch: self.best_model
         
         # if feature_names == None:
@@ -125,14 +134,53 @@ class XCobrasExplainer():
                 self.X_train,
                 feature_names=feature_names
             )
-
             self.explanations = self.explainer(X)
-        else:
-            ...
+            return self.explanations
 
-        return self.explanations
+        elif self.xai_model == "KernelShap"    :
+            print(" -- >Explaining with Kernel Shap")
+            self.explainer = shap.KernelExplainer(
+                self.best_model.predict,
+                self.X_train,
+                feature_names=feature_names
+            )
+            self.explanations = self.explainer(X)
+            return self.explanations
+        
+        else: # lime
+            self.explainer = lime_tabular.LimeTabularExplainer(
+                training_data=self.X_train, 
+                feature_names=feature_names,
+                # class_names=class_names,
+                discretize_continuous=self.discretize_continuous,
+                mode="classification"
+            )
+            
+            labels = [1, 2]
+            if self.one_vs_all == True:
+                labels = [0, 1]
+            
+            exp1 = self.explainer.explain_instance(
+                data_row=X[0], 
+                predict_fn=self.best_model.predict_proba,
+                num_features = X.shape[1],
+                labels=labels
+            )
+
+            exp2 = self.explainer.explain_instance(
+                data_row=X[1], 
+                predict_fn=self.best_model.predict_proba,
+                num_features = X.shape[1],
+                labels=labels
+            )
+
+            self.explanations = [exp1, exp2]
+            return self.explanations
+            
+
+        
     
 
     def fit_explain(self, X, y, ids, feature_names=None):
         self.fit(X,y)
-        return self.explain(X[ids])
+        return self.explain(X[ids], class_names=list(set(y)))

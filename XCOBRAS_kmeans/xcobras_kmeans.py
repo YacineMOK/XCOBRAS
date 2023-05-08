@@ -11,11 +11,16 @@ from cobras_ts.cobras_kmeans import COBRAS_kmeans
 from cobras_ts.querier.commandlinequerier import CommandLineQuerier
 
 # XCobrasExplainer
-from model_explainer import XCobrasExplainer
+from model_explainer import ClusteringExplainer
 
 
 class XCOBRAS_kmeans(COBRAS_kmeans):
-    def __init__(self, budget=10, X=None, querier=None, model="rbf_svm", test_size=0.4, one_versus_all = True, verbose=True):
+    def __init__(self, 
+                 X=None, 
+                 budget=10, 
+                 model_explainer=ClusteringExplainer() , 
+                 querier=None, 
+                 one_versus_all = True):
         """ Constructor of the "XCOBRAS_kmeans", extends  class "COBRAS_kmeans"
 
         Args:
@@ -23,7 +28,9 @@ class XCOBRAS_kmeans(COBRAS_kmeans):
         """
         self.budget = budget
         self.fitted = False
-        self.model_explainer = XCobrasExplainer(model=model, test_size=test_size, verbose=verbose)
+        self.model_explainer = model_explainer
+        self.number_query_GT = 0
+        self.arret_gt = False
         self.one_versus_all = one_versus_all
         
 
@@ -65,7 +72,7 @@ class XCOBRAS_kmeans(COBRAS_kmeans):
         :rtype: int
         """
         
-
+        
         # need to make a 'deep copy' here, we will split this one a few times just to determine an appropriate splitting
         # level
         si = self.create_superinstance(superinstance.indices)
@@ -119,25 +126,15 @@ class XCOBRAS_kmeans(COBRAS_kmeans):
             
             if len(y_hat[y_hat == 1]) != len(clustering_to_store):
                 # meaning number of class > 1
-                
+                self.arret_gt= True
                 shap_values = self.model_explainer.fit_explain(self.data, y_hat, [pt1, pt2], feature_names=self.feature_names)
-
-                # print("Model Explainer running...")
-                # #  fit "SVM" avec toutes les données + labels 1 pour la si1 - label2 pour la si2 et label0 pour le reste (si y en a)
-                # self.model_explainer.fit(self.data, y_hat)
-                # print("... finished!\n------------------------------------------\n\n")
-                
-                # print("Computing the 'Shap Values'...")
-                # # explain que les deux groupes 
-                # shap_values = self.model_explainer.explain(
-                #     np.array(self.data)[[pt1, pt2]], 
-                #     feature_names = self.feature_names
-                #     )
-
                 explanations[0] = shap_values[0]
                 explanations[1] = shap_values[1]
-                # print("... finished!\n------------------------------------------\n\n")
-                # print(f"(before) exp1: {explanations[0].values} | exp2: {explanations[1].values} ")
+            else: # gt
+                if self.arret_gt :
+                    print("It's not supposed to print this message")
+                else:
+                    self.number_query_GT +=1
             ############################################################################################################
 
             
