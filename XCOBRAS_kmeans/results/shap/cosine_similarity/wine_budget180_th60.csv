@@ -1,0 +1,19 @@
+,budget,strat,top_n,threshold,explainer,test_size,number clusters,ARI
+0,10,cosine_similarity,3,0.6,rbf_svm,0.4,3,0.399221812860479
+1,20,cosine_similarity,3,0.6,rbf_svm,0.4,3,0.399221812860479
+2,30,cosine_similarity,3,0.6,rbf_svm,0.4,3,0.399221812860479
+3,40,cosine_similarity,3,0.6,rbf_svm,0.4,3,0.399221812860479
+4,50,cosine_similarity,3,0.6,rbf_svm,0.4,3,0.399221812860479
+5,60,cosine_similarity,3,0.6,rbf_svm,0.4,3,0.399221812860479
+6,70,cosine_similarity,3,0.6,rbf_svm,0.4,3,0.5514931005968405
+7,80,cosine_similarity,3,0.6,rbf_svm,0.4,3,0.46968952659471047
+8,90,cosine_similarity,3,0.6,rbf_svm,0.4,3,0.46968952659471047
+9,100,cosine_similarity,3,0.6,rbf_svm,0.4,3,0.46968952659471047
+10,110,cosine_similarity,3,0.6,rbf_svm,0.4,3,0.46968952659471047
+11,120,cosine_similarity,3,0.6,rbf_svm,0.4,4,0.5387940980460375
+12,130,cosine_similarity,3,0.6,rbf_svm,0.4,4,0.5387940980460375
+13,140,cosine_similarity,3,0.6,rbf_svm,0.4,4,0.5387940980460375
+14,150,cosine_similarity,3,0.6,rbf_svm,0.4,4,0.5959258810648813
+15,160,cosine_similarity,3,0.6,rbf_svm,0.4,4,0.5959258810648813
+16,170,cosine_similarity,3,0.6,rbf_svm,0.4,4,0.6109406566230756
+17,180,cosine_similarity,3,0.6,rbf_svm,0.4,4,0.5936929572146329

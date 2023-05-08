@@ -1,0 +1,19 @@
+budget,strat,top_n,threshold,explainer,test_size,number clusters,ARI
+10,commun_fraction,5,0.5,rbf_svm,0.4,8,0.27928753155331715
+20,commun_fraction,5,0.5,rbf_svm,0.4,4,0.3039751957531781
+30,commun_fraction,5,0.5,rbf_svm,0.4,4,0.19582124409588061
+40,commun_fraction,5,0.5,rbf_svm,0.4,5,0.3725696812905842
+50,commun_fraction,5,0.5,rbf_svm,0.4,6,0.24323552140717727
+60,commun_fraction,5,0.5,rbf_svm,0.4,6,0.2567204072347377
+70,commun_fraction,5,0.5,rbf_svm,0.4,6,0.2567204072347377
+80,commun_fraction,5,0.5,rbf_svm,0.4,6,0.29339913789471056
+90,commun_fraction,5,0.5,rbf_svm,0.4,6,0.29339913789471056
+100,commun_fraction,5,0.5,rbf_svm,0.4,6,0.3043485962592885
+110,commun_fraction,5,0.5,rbf_svm,0.4,5,0.38119123186074355
+120,commun_fraction,5,0.5,rbf_svm,0.4,5,0.3613520191933882
+130,commun_fraction,5,0.5,rbf_svm,0.4,5,0.3613520191933882
+140,commun_fraction,5,0.5,rbf_svm,0.4,6,0.3835160080421188
+150,commun_fraction,5,0.5,rbf_svm,0.4,6,0.40271739817002167
+160,commun_fraction,5,0.5,rbf_svm,0.4,6,0.4561706479609262
+170,commun_fraction,5,0.5,rbf_svm,0.4,6,0.42799294494033496
+180,commun_fraction,5,0.5,rbf_svm,0.4,6,0.41272439237558434
